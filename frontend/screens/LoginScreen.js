@@ -18,8 +18,8 @@ export default function LoginScreen({ setIsAuthenticated }) {
             if (response.data.token) {
                 await AsyncStorage.setItem('token', response.data.token);
                 await AsyncStorage.setItem('username', username);
-                setIsAuthenticated(true); // ✅ Update authentication state immediately
-                navigation.replace('Home'); // ✅ Navigate AFTER updating auth state
+                setIsAuthenticated(true); 
+                navigation.replace('Home'); 
             } else {
                 throw new Error('No token received');
             }

@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
-import Navbar from '../screens/Navbar';
+import Navbar from '../components/Navbar';
 import { useNavigation } from '@react-navigation/native';
 import ReadingScreen from '../screens/ReadingScreen';
 

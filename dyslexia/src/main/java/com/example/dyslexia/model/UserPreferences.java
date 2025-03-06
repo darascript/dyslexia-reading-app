@@ -11,8 +11,7 @@ public class UserPreferences {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Lob
-    private String text;
+ 
 
     private String font;
     private String backgroundColor;
@@ -34,14 +33,6 @@ public class UserPreferences {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
     }
 
     public String getFont() {

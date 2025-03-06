@@ -1,5 +1,7 @@
 package com.example.dyslexia.controller;
 
+import com.example.dyslexia.model.UserPreferences;
+import com.example.dyslexia.service.UserPreferencesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,8 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.dyslexia.model.UserPreferences;
-import com.example.dyslexia.service.UserPreferencesService;
 
 @RestController
 @RequestMapping("/api/preferences")
@@ -29,15 +29,12 @@ public class UserPreferencesController {
     // GET /api/preferences/{username}
     @GetMapping("/{username}")
     public ResponseEntity<UserPreferences> getPreferences(@PathVariable String username) {
-        // Retrieve authenticated user from the token
         String authenticatedUsername = getAuthenticatedUsername();
 
-        // Check if authentication is null or usernames don't match
         if (authenticatedUsername == null || !authenticatedUsername.equals(username)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        // Fetch preferences from the service
         UserPreferences preferences = service.getUserPreferences(username);
         if (preferences == null) {
             return ResponseEntity.notFound().build();
@@ -50,15 +47,12 @@ public class UserPreferencesController {
     public ResponseEntity<UserPreferences> savePreferences(
             @PathVariable String username,
             @RequestBody UserPreferences preferences) {
-        // Retrieve authenticated user from the token
         String authenticatedUsername = getAuthenticatedUsername();
 
-        // Check if authentication is null or usernames don't match
         if (authenticatedUsername == null || !authenticatedUsername.equals(username)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        // Save preferences using the service
         preferences.setUsername(username);
         UserPreferences savedPreferences = service.saveUserPreferences(preferences);
         return ResponseEntity.ok(savedPreferences);
