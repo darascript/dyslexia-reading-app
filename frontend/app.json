@@ -22,7 +22,17 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "build": {
+        "babel": {
+          "include": [
+            "./assets/fonts/OpenDyslexic-Regular.otf"
+          ]
+        }
+      }
+    },
+    "plugins": [
+      "expo-font"
+      
+    ]
   }
 }

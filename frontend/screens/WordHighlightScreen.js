@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Slider from '@react-native-community/slider'; // Import the new Slider
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import Slider from '@react-native-community/slider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 
 const WordHighlightScreen = ({ text, onExit, font, fontSize, lineSpacing, backgroundColor }) => {
+    const insets = useSafeAreaInsets();
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [words, setWords] = useState([]);
     const [highlightedText, setHighlightedText] = useState([]);
@@ -11,29 +14,28 @@ const WordHighlightScreen = ({ text, onExit, font, fontSize, lineSpacing, backgr
 
     // Split the text into words whenever it changes
     useEffect(() => {
-        setWords(text.split(/\s+/)); // Split by spaces
+        setWords(text.split(/\s+/)); 
     }, [text]);
 
     // Handle word highlighting logic based on WPM
     useEffect(() => {
         if (words.length === 0) return;
 
-        // Calculate the delay based on WPM
         const delay = 60000 / wpm; // Delay in milliseconds
 
-        // Create a timer to switch words based on the delay calculated from WPM
+        
         const intervalId = setInterval(() => {
             setCurrentWordIndex(prevIndex => {
-                const nextIndex = (prevIndex + highlightCount) % words.length; // Loop back to start after the last word
+                const nextIndex = (prevIndex + highlightCount) % words.length; 
                 return nextIndex;
             });
         }, delay);
 
-        // Cleanup interval on component unmount or when WPM or highlightCount changes
+        
         return () => clearInterval(intervalId);
     }, [words, wpm, highlightCount]);
 
-    // Update the highlighted text to display with the specified number of words highlighted
+    
     useEffect(() => {
         const newHighlightedText = words.map((word, index) => {
             if (index >= currentWordIndex && index < currentWordIndex + highlightCount) {
@@ -45,7 +47,8 @@ const WordHighlightScreen = ({ text, onExit, font, fontSize, lineSpacing, backgr
     }, [currentWordIndex, highlightCount, words]);
 
     return (
-        <View style={[styles.container, { backgroundColor }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]}>
+            <StatusBar barStyle={backgroundColor === 'white' ? 'dark-content' : 'light-content'} />
             <Text style={[styles.title, { fontFamily: font, fontSize: fontSize + 4 }]}>Word Highlight Mode</Text>
             <View style={styles.textContainer}>
                 {highlightedText}
@@ -61,6 +64,9 @@ const WordHighlightScreen = ({ text, onExit, font, fontSize, lineSpacing, backgr
                     step={10}
                     value={wpm}
                     onValueChange={(value) => setWpm(value)}
+                    minimumTrackTintColor="#4285F4"
+                    maximumTrackTintColor="#D1D1D1"
+                    thumbTintColor="#4285F4"
                 />
             </View>
 
@@ -74,30 +80,22 @@ const WordHighlightScreen = ({ text, onExit, font, fontSize, lineSpacing, backgr
                     step={1}
                     value={highlightCount}
                     onValueChange={(value) => setHighlightCount(value)}
+                    minimumTrackTintColor="#4285F4"
+                    maximumTrackTintColor="#D1D1D1"
+                    thumbTintColor="#4285F4"
                 />
             </View>
 
             {/* Exit Button */}
-            <CustomButton title="Exit" color="#007bff" onPress={onExit} />
-        </View>
+            <TouchableOpacity 
+                style={[styles.actionButton, { marginBottom: insets.bottom + 20 }]}
+                onPress={onExit}
+            >
+                <Text style={styles.actionButtonText}>Exit</Text>
+            </TouchableOpacity>
+        </SafeAreaView>
     );
 };
-
-const CustomButton = ({ onPress, title, color }) => (
-    <Pressable
-        onPress={onPress}
-        style={{
-            backgroundColor: color,
-            padding: 12,
-            borderRadius: 10,
-            marginTop: 15,
-            alignItems: 'center',
-            width: '80%', // Button takes up 80% of the screen width for a cleaner look
-        }}
-    >
-        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>{title}</Text>
-    </Pressable>
-);
 
 const styles = StyleSheet.create({
     container: {
@@ -109,7 +107,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#333', // Darker color for better readability
+        color: '#333',
         marginBottom: 20,
     },
     textContainer: {
@@ -131,13 +129,32 @@ const styles = StyleSheet.create({
     },
     sliderLabel: {
         fontSize: 20,
-        color: '#555', // Slightly lighter gray for the label
+        color: '#555', 
         marginBottom: 10,
     },
     slider: {
         width: '100%',
         height: 15,
         marginBottom: 20,
+    },
+    actionButton: {
+        width: 200,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#4285F4',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    actionButtonText: {
+        fontSize: 24,
+        color: 'white',
+        textAlign: 'center',
     },
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, StyleSheet, Platform, StatusBar, SafeAreaView } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
@@ -8,7 +8,9 @@ import uploadDocumentAndExtractText from '../utils/documentUploader';
 import { BlurView } from 'expo-blur'; 
 import SpeedReadingScreen from './SpeedReadingScreen'; 
 import WordHighlightScreen from './WordHighlightScreen'; 
-import DocumentUploader from '../utils/documentUploader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SettingsModal from '../components/SettingsModal';
+import TextChangeModal from '../components/TextChangeModal';
 
 const ReadingScreen = ({ username }) => {
     const [text, setText] = useState('');
@@ -24,8 +26,10 @@ const ReadingScreen = ({ username }) => {
     const [newText, setNewText] = useState('');
     const [isSpeedReadingMode, setIsSpeedReadingMode] = useState(false);
     const [isWordHighlightMode, setIsWordHighlightMode] = useState(false);
+    const insets = useSafeAreaInsets();
 
-    // Fetch token from AsyncStorage
+
+    
     useEffect(() => {
         const fetchToken = async () => {
             try {
@@ -57,12 +61,12 @@ const ReadingScreen = ({ username }) => {
                 setBackgroundColor(preferencesData.backgroundColor || 'white');
     
                 // Fetch text data from new API
-                const textResponse = await axios.get(`http://localhost:8080/api/texts/3`, {
+                const textResponse = await axios.get(`http://localhost:8080/api/texts/1`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
     
                 const textData = textResponse.data;
-                setText(textData.content || ''); // Assuming content is the key holding the text
+                setText(textData.content || ''); 
     
             } catch (error) {
                 console.error("Error loading preferences or text:", error);
@@ -75,7 +79,6 @@ const ReadingScreen = ({ username }) => {
         loadPreferencesAndText();
     }, [token]);
     
-
     const handleTextChange = async () => {
         if (newText.trim()) {
             setText(newText);
@@ -106,7 +109,7 @@ const ReadingScreen = ({ username }) => {
         }
     
         const data = {
-            text, // Include text along with preferences
+            text,
             fontSize,
             lineSpacing,
             backgroundColor,
@@ -125,182 +128,197 @@ const ReadingScreen = ({ username }) => {
             setErrorMessage('Failed to save preferences and text.');
         }
     };
-    
+
     if (loading) {
-        return <Text>Loading preferences...</Text>;
+        return (
+            <View style={[styles.loadingContainer, {backgroundColor}]}>
+                <Text style={styles.loadingText}>Loading preferences...</Text>
+            </View>
+        );
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor }}>
+        <SafeAreaView style={[styles.container, {backgroundColor}]}>
+            <StatusBar barStyle={backgroundColor === 'white' ? 'dark-content' : 'light-content'} />
+            
             {isSpeedReadingMode ? (
                 <SpeedReadingScreen 
                     text={text} 
-                    onExit={() => setIsSpeedReadingMode(false)} 
+                    onExit={() => setIsSpeedReadingMode(false)}
+                    backgroundColor={backgroundColor}
+                    fontSize={fontSize}
+                    lineSpacing={lineSpacing}
+                    font={font}
                 />
             ) : isWordHighlightMode ? (
                 <WordHighlightScreen 
                     text={text} 
-                    onExit={() => setIsWordHighlightMode(false)} 
+                    onExit={() => setIsWordHighlightMode(false)}
+                    backgroundColor={backgroundColor}
+                    fontSize={fontSize}
+                    lineSpacing={lineSpacing}
+                    font={font}
                 />
             ) : (
                 <>
-                    <ScrollView contentContainerStyle={{ padding: 20 }}>
+                    <View style={styles.header}>
                         <Text style={styles.title}>Reading App</Text>
-                        <Text style={{
-                            fontSize,
-                            lineHeight: fontSize * lineSpacing,
-                            fontFamily: font === 'opendyslexic' ? 'OpenDyslexic-Regular' : font,
-                            color: 'black',
-                            textAlign: 'justify'
-                        }}>
-                            {text}
-                        </Text>
+                        {errorMessage ? (
+                            <Text style={styles.errorMessage}>{errorMessage}</Text>
+                        ) : null}
+                    </View>
+                    
+                    <ScrollView 
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                    >
+                        <View style={styles.textContainer}>
+                            <Text style={{
+                                fontSize,
+                                lineHeight: fontSize * lineSpacing,
+                                fontFamily: font === 'opendyslexic' ? 'OpenDyslexic' : font,
+                                color: backgroundColor === 'white' ? '#333' : '#fff',
+                                textAlign: 'justify'
+                            }}>
+                                {text}
+                            </Text>
+                        </View>
                     </ScrollView>
 
                     {(isSettingsVisible || isTextChangeVisible) && (
                         <BlurView style={styles.blurContainer} blurType="light" blurAmount={10} />
                     )}
 
-                    <Modal visible={isSettingsVisible} transparent animationType="slide">
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.title}>Settings</Text>
+                    <SettingsModal
+                        visible={isSettingsVisible}
+                        onClose={() => setIsSettingsVisible(false)}
+                        onSave={async () => { 
+                            await saveData('preferences');
+                            setIsSettingsVisible(false); 
+                        }}
+                        fontSize={fontSize}
+                        setFontSize={setFontSize}
+                        lineSpacing={lineSpacing}
+                        setLineSpacing={setLineSpacing}
+                        backgroundColor={backgroundColor}
+                        setBackgroundColor={setBackgroundColor}
+                        font={font}
+                        setFont={setFont}
+                    />
 
-                                <Text>Font Size:</Text>
-                                <Slider
-                                    value={fontSize}
-                                    onValueChange={setFontSize}
-                                    minimumValue={12}
-                                    maximumValue={30}
-                                    step={1}
-                                />
-
-                                <Text>Line Spacing:</Text>
-                                <Slider
-                                    value={lineSpacing}
-                                    onValueChange={setLineSpacing}
-                                    minimumValue={1}
-                                    maximumValue={2}
-                                    step={0.1}
-                                />
-
-                                <Text>Background Color:</Text>
-                                <Picker
-                                    selectedValue={backgroundColor}
-                                    onValueChange={(itemValue) => setBackgroundColor(itemValue)}
-                                >
-                                    <Picker.Item label="White" value="white" />
-                                    <Picker.Item label="Light Gray" value="lightgray" />
-                                    <Picker.Item label="Light Blue" value="lightblue" />
-                                    <Picker.Item label="Light Yellow" value="lightyellow" />
-                                </Picker>
-
-                                <Text>Font:</Text>
-                                <Picker
-                                    selectedValue={font}
-                                    onValueChange={(itemValue) => setFont(itemValue)}
-                                >
-                                    <Picker.Item label="OpenDyslexic" value="opendyslexic" />
-                                    <Picker.Item label="Sans-serif" value="sans-serif" />
-                                    <Picker.Item label="Serif" value="serif" />
-                                    <Picker.Item label="Monospace" value="monospace" />
-                                </Picker>
-
-                                <TouchableOpacity 
-                                    style={styles.uploadButton} 
-                                    onPress={async () => { 
-                                        await saveData('preferences');
-                                        setIsSettingsVisible(false); 
-                                    }}
-                                >
-                                    <Text style={styles.buttonText}>Save Preferences</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity 
-                                    style={styles.uploadButton} 
-                                    onPress={() => setIsSettingsVisible(false)}
-                                >
-                                    <Text style={styles.buttonText}>Close</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    <Modal visible={isTextChangeVisible} transparent animationType="slide">
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <TouchableOpacity style={styles.uploadButton} onPress={handleDocumentUpload}>
-                                    <Text style={styles.buttonText}>📂 Upload Document</Text>
-                                </TouchableOpacity>
-
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="Type new text here..."
-                                    multiline
-                                    value={newText}
-                                    onChangeText={setNewText}
-                                />
-
-                                <TouchableOpacity 
-                                    style={styles.uploadButton} 
-                                    onPress={handleTextChange}
-                                >
-                                    <Text style={styles.buttonText}>Save Text</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity 
-                                    style={styles.uploadButton} 
-                                    onPress={() => setIsTextChangeVisible(false)}
-                                >
-                                    <Text style={styles.buttonText}>Close</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    <View style={styles.floatingButtons}>
+                    
+                    <TextChangeModal
+                        visible={isTextChangeVisible}
+                        onClose={() => setIsTextChangeVisible(false)}
+                        onSave={handleTextChange}
+                        newText={newText}
+                        setNewText={setNewText}
+                        onDocumentUpload={handleDocumentUpload}
+                    />
+                    
+                    {/* Action Buttons */}
+                    <View style={[styles.floatingButtons, { bottom: insets.bottom + 20 }]}>
                         <TouchableOpacity 
-                            style={styles.settingsButton} 
+                            style={styles.actionButton}
                             onPress={() => setIsSettingsVisible(true)}
                         >
-                            <Text style={styles.buttonText}>⚙ Settings</Text>
+                            <Text style={styles.actionButtonText}>⚙️</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
-                            style={styles.changeTextButton} 
+                            style={styles.actionButton}
                             onPress={() => setIsTextChangeVisible(true)}
                         >
-                            <Text style={styles.buttonText}>✍ Change Text</Text>
+                            <Text style={styles.actionButtonText}>✏️</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
-                            style={styles.switchButton} 
+                            style={styles.actionButton}
                             onPress={() => setIsSpeedReadingMode(true)}
                         >
-                            <Text style={styles.buttonText}>🔄 Speed Reading</Text>
+                            <Text style={styles.actionButtonText}>⏩</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.switchButton} onPress={() => setIsWordHighlightMode(true)}>
-                            <Text style={styles.buttonText}>🔦 Word Highlight</Text>
+
+                        <TouchableOpacity 
+                            style={styles.actionButton}
+                            onPress={() => setIsWordHighlightMode(true)}
+                        >
+                            <Text style={styles.actionButtonText}>🔍</Text>
                         </TouchableOpacity>
                     </View>
                 </>
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    modalContent: { backgroundColor: 'white', padding: 20, borderRadius: 10, width: '80%' },
-    uploadButton: { backgroundColor: '#f0ad4e', padding: 10, borderRadius: 8, marginBottom: 20 },
-    buttonText: { color: 'white', fontWeight: 'bold', textAlign: 'center' },
-    floatingButtons: { position: 'absolute', right: 20, bottom: 20, gap: 10 },
-    settingsButton: { backgroundColor: '#007bff', padding: 12, borderRadius: 8 },
-    changeTextButton: { backgroundColor: '#28a745', padding: 12, borderRadius: 8 },
-    switchButton: { backgroundColor: '#6c757d', padding: 12, borderRadius: 8 },
-    textInput: { height: 200, borderColor: '#ccc', borderWidth: 1, marginBottom: 20, padding: 10 },
-    blurContainer: { ...StyleSheet.absoluteFillObject, zIndex: 1000 },
+    container: {
+        flex: 1,
+        backgroundColor: 'white',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 18,
+        color: '#333',
+    },
+    header: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    errorMessage: {
+        color: 'red',
+        textAlign: 'center',
+        marginTop: 8,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        padding: 20,
+    },
+    textContainer: {
+        backgroundColor: 'transparent',
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    blurContainer: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 100,
+    },
+    floatingButtons: {
+        position: 'absolute',
+        right: 20,
+        flexDirection: 'row',
+    },
+    actionButton: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#4285F4',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    actionButtonText: {
+        fontSize: 24,
+    },
 });
 
 export default ReadingScreen;
